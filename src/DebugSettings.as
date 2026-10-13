@@ -1,6 +1,6 @@
 #if SIG_DEVELOPER
 
-[SettingsTab name="Debug" icon="Icons::Cogs" order=99]
+[SettingsTab name="Debug" icon="Cogs" order=99]
 void RenderDebugSettingsTab() {
     UI::Text("g_IsPlayerDriving: " + g_IsPlayerDriving);
     UI::Text("g_EnableSkidlessGhostsThisFrame: " + g_EnableSkidlessGhostsThisFrame);

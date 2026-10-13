@@ -218,7 +218,11 @@ bool DoesViewingEntIdMatchPlayer() {
 
 DGameCamera@ GetGameCamera(CGameCtnApp@ app) {
     auto ptr = Dev::GetOffsetUint64(app, GetOffset(app, "GameScene") + 0x10);
-    if (ptr <= 0xFFFFFFFFF) return null;
+#if LINUX || WINDOWS_WINE
+    if (ptr < 0x1000000) return null;
+#else
+    if (ptr < 0x10000000000) return null;
+#endif
     return DGameCamera(ptr);
 }
 
@@ -267,7 +271,7 @@ void UpdateWhilePlaying() {
         }
         return;
     }
-    if (playerNbRespawnRequests != player.Score.NbRespawnsRequested) {
+    if (playerNbRespawnRequests != int(player.Score.NbRespawnsRequested)) {
         playerNbRespawnRequests = player.Score.NbRespawnsRequested;
         if (S_ClearSkidsOnRespawn) {
             trace('Clear skids on respawn');

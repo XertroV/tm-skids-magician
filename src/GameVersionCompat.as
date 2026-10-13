@@ -1,11 +1,16 @@
 bool GameVersionSafe = false;
 const string[] KnownSafeVersions = {
+    "2026-07-22_18_27",
+    "2026-02-02_17_51",
     "2024-01-10_12_53",
     "2024-03-19_14_47",
     "2024-04-05_20_53",
     "2024-04-12_13_04"
 };
 const string configUrl = "https://openplanet.dev/plugin/skids-magician/config/version-compat";
+
+[Setting hidden]
+string S_SavedOkayGameVersion = "";
 
 /**
  * New version checklist:
@@ -28,12 +33,21 @@ void EnsureGameVersionCompatibility() {
     TmGameVersion = GetApp().SystemPlatform.ExeVersion;
     GameVersionSafe = KnownSafeVersions.Find(TmGameVersion) > -1;
     if (GameVersionSafe) return;
-    GameVersionSafe = GetStatusFromOpenplanet();
-    trace("Got GameVersionSafe status: " + GameVersionSafe);
+    bool fromOpenplanet = GetStatusFromOpenplanet();
+    trace("Got GameVersionSafe status: " + fromOpenplanet);
+    GameVersionSafe = GameVersionSafe
+        || fromOpenplanet
+        || TmGameVersion == S_SavedOkayGameVersion;
 }
 
 void WarnBadGameVersion() {
-    NotifyWarning("Game version ("+TmGameVersion+") not marked as compatible with this version of the plugin -- will be inactive!\n\nChecking new versions is a manual process and avoids crashing your game after an update.");
+    NotifyWarning(
+        "This plugin has not been verified to work properly with this game version (" + TmGameVersion + "), "
+        "therefore it's currently disabled.\n\nThere's nothing you need to do - checking new game updates is a "
+        "manual process done by the developer that avoids crashing your game.\n\nTo use the plugin anyway, "
+        "check the last tab of its settings.",
+        20000
+    );
 }
 
 bool requestStarted = true;
@@ -77,13 +91,29 @@ bool RetryGetStatus(uint delay) {
     return GetStatusFromOpenplanet();
 }
 
-[SettingsTab name="Game Version Check" icon="ExclamationTriangle"]
-void OverrideGameSafetyCheck() {
+[SettingsTab name="Game Version Check" icon="ExclamationTriangle" order=99]
+void OverrideGameSafetyCheck_Settings() {
     UI::Text("Game version safe? " + tostring(GameVersionSafe));
     UI::Text("Check request started: " + tostring(requestStarted));
     UI::Text("Check request ended: " + tostring(requestEnded));
-    if (!GameVersionSafe && UI::Button("Disable safety features and run anyway")) {
-        GameVersionSafe = true;
+    if (!GameVersionSafe) {
+        if (UI::Button("Disable safety features and run anyway")) {
+            OverrideGameSafetyCheck_SkidsMagician();
+        }
+        UI::SetItemTooltip("Temporary. Lasts until you restart the game.");
+
+        if (UI::Button("Disable safety features and run and remember game version")) {
+            OverrideGameSafetyCheck_SkidsMagician();
+            S_SavedOkayGameVersion = TmGameVersion;
+        }
+        UI::SetItemTooltip("Permanent. Lasts until the game is updated.");
+    }
+
+    if (GameVersionSafe && S_SavedOkayGameVersion == TmGameVersion) {
+        if (UI::Button("Forget remembered game version")) {
+            S_SavedOkayGameVersion = "";
+            NotifyWarning("Reload plugin!");
+        }
     }
 }
 

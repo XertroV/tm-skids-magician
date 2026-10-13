@@ -59,7 +59,12 @@ uint64 Dev_GetPointerForNod(CMwNod@ nod) {
 }
 
 CMwNod@ Dev_GetNodFromPointer(uint64 ptr) {
-    if (ptr < 0xFFFFFFFF || ptr % 8 != 0 || ptr >> 48 > 0) {
+#if LINUX || WINDOWS_WINE
+    if (ptr < 0x1000000) return null;
+#else
+    if (ptr < 0x10000000000) return null;
+#endif
+    if (ptr % 8 != 0 || ptr >> 48 > 0) {
         return null;
     }
     return Dev_GetArbitraryNodAt(ptr);
@@ -69,9 +74,13 @@ CMwNod@ Dev_GetNodFromPointer(uint64 ptr) {
 
 
 bool Dev_PointerLooksBad(uint64 ptr) {
+#if LINUX || WINDOWS_WINE
+    if (ptr < 0x1000000) return true;
+#else
     if (ptr < 0x10000000000) return true;
-    if (ptr % 8 != 0) return true;
     if (ptr > Dev::BaseAddressEnd()) return true;
+#endif
+    if (ptr % 8 != 0) return true;
     return false;
 }
 
